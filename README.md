@@ -1,17 +1,20 @@
 # Venti AI - Chatbot Service
 
-Venti AI is a Go-based service that provides a REST API for interacting with various AI models. Currently, it supports Google's Gemini Flash AI.
+Venti AI is a Go-based service that provides WebSocket API for interacting with various AI models. Currently, it supports DeepSeek Chat and Google's Gemini Flash AI.
 
 ## Features
 
+- WebSocket-based real-time chat with streaming responses
 - Service-based architecture, easily extendable to support multiple AI providers
-- REST API for chat interactions
 - Session management for persistent conversations
+- Response time tracking
+- Multiple AI model support
 - Configurable settings via environment variables
 
 ## Requirements
 
 - Go 1.24 or later
+- DeepSeek API key
 - Google Gemini API key
 
 ## Setup
@@ -19,11 +22,10 @@ Venti AI is a Go-based service that provides a REST API for interacting with var
 1. Set the required environment variables:
 
 ```bash
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
 export GEMINI_API_KEY="your-gemini-api-key"
 # Optional configs:
 export SERVER_PORT=8080
-export AI_SERVICE_TYPE=gemini
-export DEFAULT_LANGUAGE=en
 ```
 
 2. Build and run the application:
@@ -35,49 +37,84 @@ go build
 
 ## API Usage
 
-### Chat Endpoint
+### WebSocket Chat Endpoint
 
-**URL**: `/api/chat`
-**Method**: `POST`
-**Content-Type**: `application/json`
+**URL**: `ws://localhost:8080/ws/chat`
+**Protocol**: `WebSocket`
 
-**Request Body**:
+**Request Message Format**:
 ```json
 {
+  "model": "deepseek-chat",
   "message": "Hello, how are you?",
   "session_id": "optional-session-id"
 }
 ```
 
-**Response**:
+Available models:
+- `deepseek-chat`: DeepSeek Chat model
+- `gemini-2.0-flash`: Google Gemini Flash model
+
+**Response Message Format**:
 ```json
 {
-  "message": "I'm doing well, thank you for asking! How can I help you today?",
-  "session_id": "session_123456789"
+  "model": "deepseek-chat",
+  "message": "chunk of response",
+  "session_id": "session_123456789",
+  "response_time": 123
 }
 ```
 
-**Example curl request**:
-```bash
-curl -X POST http://localhost:8080/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Tell me a joke"}'
+Special messages:
+- `[DONE]` in message field indicates completion of response
+- Error responses:
+```json
+{
+  "error": "error message"
+}
+```
+
+**Example JavaScript usage**:
+```javascript
+const ws = new WebSocket('ws://localhost:8080/ws/chat');
+
+ws.onmessage = (event) => {
+  const response = JSON.parse(event.data);
+  
+  if (response.message === '[DONE]') {
+    console.log('Chat completed');
+    return;
+  }
+
+  console.log('Model:', response.model);
+  console.log('Message:', response.message);
+  console.log('Session ID:', response.session_id);
+  console.log('Response Time:', response.response_time, 'ms');
+};
+
+// Send a message
+ws.send(JSON.stringify({
+  model: 'deepseek-chat',
+  message: 'Hello!',
+  session_id: 'optional-session-id'
+}));
 ```
 
 ## Adding Support for Other AI Models
 
-To add a new AI service:
+To add a new AI model:
 
-1. Implement the AI service interface in a new file under `services/ai/`
-2. Add the new service type to `factory.go`
-3. Update `GetService()` to handle the new service type
+1. Add the model configuration in `models/model.go`
+2. Update the OpenAI service to handle the new model
+3. Update the chat controller to route requests to the new model
 
 ## Architecture
 
-- `services/ai/`: AI service interfaces and implementations
-- `controllers/`: HTTP request handlers
-- `models/`: Data structures for requests and responses
+- `services/`: AI service implementations
+- `controllers/`: WebSocket request handlers
+- `models/`: Data structures and model configurations
 - `utils/`: Utility functions and configuration
+- `data/`: System prompts and other embedded data
 
 ## License
 

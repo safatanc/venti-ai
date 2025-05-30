@@ -1,37 +1,65 @@
 package controllers
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/safatanc/venti-ai/models"
-	"github.com/safatanc/venti-ai/services/ai"
+	"github.com/safatanc/venti-ai/services"
 )
 
 type ChatController struct {
-	GeminiService *ai.GeminiService
+	DeepseekService *services.OpenAIService
+	GeminiService   *services.OpenAIService
 }
 
-func NewChatController(geminiService *ai.GeminiService) *ChatController {
+func NewChatController(deepseekService *services.OpenAIService, geminiService *services.OpenAIService) *ChatController {
 	return &ChatController{
-		GeminiService: geminiService,
+		DeepseekService: deepseekService,
+		GeminiService:   geminiService,
 	}
 }
 
 func (c *ChatController) HandleChat(ctx *fiber.Ctx) error {
-	var chatRequest *models.ChatRequest
-	if err := ctx.BodyParser(&chatRequest); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
+	// Upgrade to WebSocket
+	return websocket.New(func(conn *websocket.Conn) {
+		for {
+			// Read message from client
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
 
-	resp, err := c.GeminiService.GenerateText(chatRequest.Message)
-	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
+			// Parse chat request
+			var chatRequest models.ChatRequest
+			if err := json.Unmarshal(msg, &chatRequest); err != nil {
+				conn.WriteJSON(models.ErrorResponse{
+					Error: err.Error(),
+				})
+				continue
+			}
 
-	return ctx.JSON(models.ChatResponse{
-		Message: resp,
-	})
+			// Choose the appropriate service based on the model
+			var service *services.OpenAIService
+			switch chatRequest.Model {
+			case models.DEEPSEEK_CHAT_MODEL:
+				service = c.DeepseekService
+			case models.GEMINI_FLASH_MODEL:
+				service = c.GeminiService
+			default:
+				conn.WriteJSON(models.ErrorResponse{
+					Error: "Invalid model specified",
+				})
+				continue
+			}
+
+			// Generate response
+			if err := service.GenerateTextWS(conn, chatRequest.Message, chatRequest.SessionID); err != nil {
+				conn.WriteJSON(models.ErrorResponse{
+					Error: err.Error(),
+				})
+			}
+		}
+	})(ctx)
 }
