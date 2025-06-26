@@ -150,7 +150,8 @@
       });
 
       function connect() {
-        ws = new WebSocket("ws://localhost:8080/ws/chat");
+        // ws = new WebSocket("ws://localhost:8080/ws/chat");
+        ws = new WebSocket("ws://venti-ai.safatanc.com/ws/chat");
 
         ws.onopen = () => {};
 

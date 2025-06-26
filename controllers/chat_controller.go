@@ -48,10 +48,7 @@ func (c *ChatController) HandleChat(ctx *fiber.Ctx) error {
 			case models.GEMINI_FLASH_MODEL:
 				service = c.GeminiService
 			default:
-				conn.WriteJSON(models.ErrorResponse{
-					Error: "Invalid model specified",
-				})
-				continue
+				service = c.GeminiService
 			}
 
 			// Generate response
