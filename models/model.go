@@ -10,7 +10,7 @@ type Model struct {
 
 const (
 	DEEPSEEK_CHAT_MODEL = "deepseek-chat"
-	GEMINI_FLASH_MODEL  = "gemini-2.0-flash"
+	GEMINI_FLASH_MODEL  = "gemini-2.5-flash"
 )
 
 func GetModel(name string) *Model {

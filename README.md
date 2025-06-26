@@ -22,8 +22,8 @@ Venti AI is a Go-based service that provides WebSocket API for interacting with 
 1. Set the required environment variables:
 
 ```bash
-export DEEPSEEK_API_KEY="your-deepseek-api-key"
 export GEMINI_API_KEY="your-gemini-api-key"
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
 # Optional configs:
 export SERVER_PORT=8080
 ```
