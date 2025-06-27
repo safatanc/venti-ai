@@ -52,7 +52,7 @@ func (c *ChatController) HandleChat(ctx *fiber.Ctx) error {
 			}
 
 			// Generate response
-			if err := service.GenerateTextWS(conn, chatRequest.Message, chatRequest.SessionID); err != nil {
+			if err := service.GenerateTextWS(conn, &chatRequest); err != nil {
 				conn.WriteJSON(models.ErrorResponse{
 					Error: err.Error(),
 				})

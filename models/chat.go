@@ -13,9 +13,10 @@ type ChatSession struct {
 
 // ChatRequest represents a request to chat with the AI
 type ChatRequest struct {
-	Model     string `json:"model"`
-	Message   string `json:"message"`
-	SessionID string `json:"session_id,omitempty"`
+	Model                  string  `json:"model"`
+	Message                string  `json:"message"`
+	SessionID              string  `json:"session_id,omitempty"`
+	AdditionalSystemPrompt *string `json:"additional_system_prompt,omitempty"`
 }
 
 // ChatResponse represents a response from the AI

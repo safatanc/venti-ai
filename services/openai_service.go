@@ -73,11 +73,11 @@ func (s *OpenAIService) getOrCreateSession(sessionID string) string {
 	return sessionID
 }
 
-func (s *OpenAIService) GenerateTextWS(conn *websocket.Conn, message string, sessionID string) error {
+func (s *OpenAIService) GenerateTextWS(conn *websocket.Conn, chatRequest *models.ChatRequest) error {
 	start := time.Now()
 
 	// Get or create session
-	sessionID = s.getOrCreateSession(sessionID)
+	sessionID := s.getOrCreateSession(chatRequest.SessionID)
 
 	// Get session messages
 	s.sessionMutex.RLock()
@@ -89,7 +89,7 @@ func (s *OpenAIService) GenerateTextWS(conn *websocket.Conn, message string, ses
 	// Add user message
 	messages = append(messages, models.ChatMessage{
 		Role:    "user",
-		Content: message,
+		Content: chatRequest.Message,
 	})
 
 	// Convert messages to OpenAI format
@@ -124,6 +124,18 @@ func (s *OpenAIService) GenerateTextWS(conn *websocket.Conn, message string, ses
 				},
 			}
 		}
+	}
+
+	additionalSystemPrompt := chatRequest.AdditionalSystemPrompt
+	if additionalSystemPrompt != nil {
+		openaiMessages = append(openaiMessages, openai.ChatCompletionMessageParamUnion{
+			OfSystem: &openai.ChatCompletionSystemMessageParam{
+				Role: "system",
+				Content: openai.ChatCompletionSystemMessageParamContentUnion{
+					OfString: openai.String(*additionalSystemPrompt),
+				},
+			},
+		})
 	}
 
 	// Generate response
